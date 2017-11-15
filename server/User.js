@@ -160,6 +160,11 @@ class User extends EventEmitter {
 		this.offline=true;
 		this.emit('out', this);
 	}
+	/**
+	 * 
+	 * @param {*} cmd 
+	 * @param {*} timeoutOrOpt 
+	 */
 	createInteract(cmd, timeoutOrOpt) {
 		return new Interact(this, timeoutOrOpt).serverAct(cmd);
 	}
@@ -565,10 +570,12 @@ class User extends EventEmitter {
 			case 'withdraw':
 				// if (!withdrawCache[this.id]) {
 				// 	withdrawCache[this.id]={from:this.id, rmb:pack.coins};
+				if (self.coins>=pack.coins) {
 					g_db.p.withdraw.insert({from:this.id, nickname:this.nickname, exported:false, _t:new Date(), rmb:pack.coins}, function() {
 						self.coins-=pack.coins;
 						self.send({c:'withdraw.ok'});
 					});
+				} else {self.send({err:'没有那么多钱'})}
 				// } else {
 				// 	withdrawCache[this.id].rmb+=pack.coins;
 				// 	g_db.p.withdraw.update({from:this.id}, {$set:{rmb:withdrawCache[this.id].rmb}}, function() {

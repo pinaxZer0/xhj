@@ -1,6 +1,6 @@
 'use strict';
 var TableBase=require('./tablebase.js');
-var async=require('async'), merge=require('merge'), clone=require('clone');
+var async=require('async'), merge=require('gy-merge'), clone=require('clone');
 var Game=require('./gamerule');
 var debugout=require('debugout')(require('yargs').argv.debugout);
 var _=require('lodash');
