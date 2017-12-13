@@ -29,6 +29,9 @@ module.exports = function(cards){
     var ret = 0;
     for(var i = 0; i < this.cards.length; i++){
       var card = this.cards[i];
+      if (!card) {
+        console.log(this.cards, i);
+      }
       if(card.description.toLowerCase() === 'ace')
         ret += 1;
       else if(card.sort >= 10)

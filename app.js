@@ -421,7 +421,7 @@ getDB(function (err, db, easym) {
 		else var pack = User.pack_define[packid];
 		if (!pack) return callback('no such pack ' + packid);
 		pack.name=packid;
-		db.bills.insertOne({ pack: pack, time: new Date(), user: userid }, function (err, r) {
+		db.bills.insertOne({ pack: pack, time: new Date(), user: userid , used:false}, function (err, r) {
 			if (err) return callback(err);
 			debugout('createOrder', r.insertedId, pack);
 			callback(null, { orderid: r.insertedId, money: pack.rmb });
@@ -458,11 +458,13 @@ getDB(function (err, db, easym) {
 			if (order == null) return callback('无此订单' + orderid);
 			if (order.used) return callback('订单已使用@' + order.used);
 			if (money != null && order.pack.rmb != money) return callback('充值金额不对');
-			var reciept = merge(extra, { time: new Date(), ip: userip });
-			db.bills.update(key, { $set: { used: reciept } });
+			db.bills.updateOne(key, { $set: { used: true } }, function(err) {
+				debugout('upd reciept', err);
+			});
 			User.fromID(order.user, function (err, user) {
 				if (err) return callback(err);
 				user.addPackage(order.pack);
+				user.send({c:'rechargeComplete', orderid:orderid, money:money});
 				debugout('chk firstCash', !user.firstCash);
 				if (!user.firstCash) {
 					user.firstCash=1;

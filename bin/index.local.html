@@ -38,6 +38,14 @@
 				e.preventDefault();
 				if (confirm('确定退出吗？')) navigator.app.exitApp();
 			}, false);
+			if (window.AndroidFullScreen) {
+				AndroidFullScreen.immersiveMode(function() {}, function() {});
+			} else if (window.StatusBar) {
+				StatusBar.hide();
+			}
+			if (window.device.platform === 'iOS') {
+				cordova.plugins.iosrtc && cordova.plugins.iosrtc.registerGlobals();
+			}
 			loadScript('./entry.js');
 		}
 		document.addEventListener('deviceready', onDeviceReady, false);	

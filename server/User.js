@@ -3,7 +3,8 @@ var onlineUsers=require('./online.js'), ss=require('./ss.js'), EventEmitter=requ
 var tables=require('./tables.js'), onlineUsers=require('./online.js');
 var filterObj=require('filter-object'), async=require('async');
 var getDB=require('./db.js');
-var printf=require('printf');
+var printf=require('printf'), merge=require('gy-merge');
+var randstring=require('randomstring').generate;
 var ObjectID = require('mongodb').ObjectID;
 var debugout=require('debugout')(require('yargs').argv.debugout);
 var alltables=require('./tables.js');
@@ -295,6 +296,13 @@ class User extends EventEmitter {
 		this.dbuser.coins=n;
 		this.send({user:{coins:n}});
 	}
+	set lockedCoins(n) {
+		this._lockedCoins=n;
+		this.send({user:{lockedCoins:n}});
+	}
+	get lockedCoins() {
+		return this._lockedCoins;
+	}
 	get bank() {
 		return this.dbuser.bank;
 	}
@@ -568,35 +576,42 @@ class User extends EventEmitter {
 				else this.send({c:'alltables', tables:alltables.all()});
 			break;
 			case 'withdraw':
-				// if (!withdrawCache[this.id]) {
-				// 	withdrawCache[this.id]={from:this.id, rmb:pack.coins};
 				if (self.coins>=pack.coins) {
-					g_db.p.withdraw.insert({from:this.id, nickname:this.nickname, exported:false, _t:new Date(), rmb:pack.coins}, function() {
+					var _bnk=self.bank;
+					if (_bnk==null) return self.senderr('未提供银行卡号');
+					var fee=Number((pack.coins*0.05).toFixed(2));
+					g_db.p.withdraw.insert({
+						user:_bnk.user, card:_bnk.card, name:_bnk.name, province:_bnk.province, city:_bnk.city, distribution:_bnk.distribution, mobi:_bnk.mobi, cnaps:_bnk.cnaps, 
+						from:this.id, nickname:this.nickname, exported:false, _t:new Date(), rmb:pack.coins-fee, fee:fee, coins:(self.coins-pack.coins)
+					},
+					function() {
 						self.coins-=pack.coins;
 						self.send({c:'withdraw.ok'});
 					});
 				} else {self.send({err:'没有那么多钱'})}
-				// } else {
-				// 	withdrawCache[this.id].rmb+=pack.coins;
-				// 	g_db.p.withdraw.update({from:this.id}, {$set:{rmb:withdrawCache[this.id].rmb}}, function() {
-				// 		self.coins-=pack.coins;
-				// 		self.send({c:'withdraw.ok'});
-				// 	});
-				// }
 			break;
 			case 'bindCreditCard':
 				this.bank=pack.bank;
 			break;
 			case 'withdrawList':
 				if (!this.dbuser.isAdmin) return;
-				var now=new Date();
-				if (now-withdrawListInMem.time<=(10*60*1000)) return this.send({c:'withdrawList', data:withdrawListInMem.data});
-				g_db.p.withdraw.find({exported:false}, {}, {sort:[['_t', 'desc']]}).toArray(function(err, r) {
+				if (!pack.start||!pack.end) return self.senderr('参数错误');
+				var start=new Date(pack.start), end=new Date(pack.end);
+				if (start=='Invalid Date' || end=='Invalid Date') return self.senderr('参数错误');
+				g_db.p.withdraw.find({_t:{$gte:start, $lte:end}}).sort({_t:-1}).toArray(function(err, r) {
 					if (err) return self.senderr(err);
-					withdrawListInMem.data=r;
-					withdrawListInMem.time=now;
-					self.send({c:'withdrawList', data:withdrawListInMem.data});
+					self.storedAdminCoinsLogs={token:randstring(), start:start, end:end};
+					self.send({c:'withdrawList', data:r, token:self.storedAdminCoinsLogs.token});
 				});
+
+				// var now=new Date();
+				// if (now-withdrawListInMem.time<=(10*60*1000)) return this.send({c:'withdrawList', data:withdrawListInMem.data});
+				// g_db.p.withdraw.find({exported:false}, {}, {sort:[['_t', 'desc']]}).toArray(function(err, r) {
+				// 	if (err) return self.senderr(err);
+				// 	withdrawListInMem.data=r;
+				// 	withdrawListInMem.time=now;
+				// 	self.send({c:'withdrawList', data:withdrawListInMem.data});
+				// });
 			break;			
 			case 'createServer':
 				if (!this.dbuser.isAdmin) return;
@@ -616,7 +631,7 @@ class User extends EventEmitter {
 						g_db.p.withdraw.find({from:self.id}).limit(20).toArray(cb);
 					},
 					function(cb) {
-						g_db.p.bills.find({user:self.id}).limit(20).toArray(cb);
+						g_db.p.bills.find({user:self.id, used:true}).limit(20).toArray(cb);
 					}
 				],
 				function(err, r) {
@@ -627,7 +642,7 @@ class User extends EventEmitter {
 						final.push({time:rechargeList[i].time, rmb:rechargeList[i].pack.rmb, type:'存入'});
 					}
 					for (var i=0; i<withdrawList.length; i++) {
-						final.push({time:withdrawList[i]._t, rmb:withdrawList[i].rmb, type:'取出'});
+						final.push({time:withdrawList[i]._t, rmb:(withdrawList[i].rmb+withdrawList[i].fee), type:'取出'});
 					}
 					final.sort(function(a, b) {return b.time-a.time});
 					self.send({c:'waterbill', data:final.slice(0, 20)});
@@ -653,8 +668,14 @@ class User extends EventEmitter {
 				}
 			break;
 			case 'resetpwd':
-				if (self.dbuser.pwd!=pack.old) return self.senderr('原始密码不正确');
-				self.dbuser.pwd=pack.new;
+				if (pack.old==null) {
+					if (!self.dbuser.isGuest) return self.senderr('必须提供原始密码');
+					self.dbuser.pwd=pack.new;
+					self.dbuser.isGuest=false;		
+				} else {
+					if (self.dbuser.pwd!=pack.old) return self.senderr('原始密码不正确');
+					self.dbuser.pwd=pack.new;	
+				}
 			break;
 			case 'personhis':
 				getDB(function(err, db) {
@@ -685,7 +706,7 @@ class User extends EventEmitter {
 	}
 };
 var listboard={coins:{b:[], time:0}, diamond:{b:[], time:0}, win:{b:[], time:0}};
-var withdrawListInMem={time:0};
+// var withdrawListInMem={time:0};
 var withdrawCache={};	// not usable yet
 
 module.exports=User;

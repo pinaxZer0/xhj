@@ -1,6 +1,6 @@
 webpackJsonp([3],{
 
-/***/ 27:
+/***/ 80:
 /***/ function(module, exports) {
 
 	"use strict";
@@ -169,12 +169,12 @@ webpackJsonp([3],{
 
 /***/ },
 
-/***/ 31:
+/***/ 84:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var tongji = window.tongji = __webpack_require__(27);
+	var tongji = window.tongji = __webpack_require__(80);
 	function _noop() {}
 	function toRuleString(rule) {
 		var str = '';
@@ -248,7 +248,7 @@ webpackJsonp([3],{
 			wx.chooseWXPay(r);
 		});
 	};
-	var async = __webpack_require__(18);
+	var async = __webpack_require__(15);
 	var wxq = async.queue(function (task, cb) {
 		if (typeof task == 'function') return task(cb);
 		cb();
@@ -364,7 +364,7 @@ webpackJsonp([3],{
 	}
 	accWechatIntf('weixin/sign', {}, function (err, conf) {
 		if (err) return console.log(err);
-		var WechatJSSDK = __webpack_require__(32);
+		var WechatJSSDK = __webpack_require__(85);
 		conf.jsApiList = ['onMenuShareTimeline', 'onMenuShareAppMessage', 'startRecord', 'stopRecord', 'onVoiceRecordEnd', 'playVoice', 'pauseVoice', 'stopVoice', 'onVoicePlayEnd', 'uploadVoice', 'downloadVoice'];
 		conf.success = function () {
 			window.wxInit && window.wxInit();
@@ -406,7 +406,7 @@ webpackJsonp([3],{
 
 /***/ },
 
-/***/ 32:
+/***/ 85:
 /***/ function(module, exports) {
 
 	/*!

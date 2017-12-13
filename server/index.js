@@ -41,10 +41,11 @@ function chkpwd(userid, pwd, cb) {
 }
 
 function afterUserIn(err, pack, ws, dbuser) {
-	if (err) return ws.sendp({err:err});
+	if (err) return ws.sendp({err:err, view:'login'});
 	if (dbuser) {
+		if (dbuser.block>new Date()) return ws.sendp({c:'lgerr',msg:'账号被封停', view:'login'});
 		if (!dbuser.__created) {
-			if (dbuser.pwd && dbuser.pwd!=pack.pwd) return ws.sendp({err:'账号密码错'});
+			if (dbuser.pwd && dbuser.pwd!=pack.pwd) return ws.sendp({err:'账号密码错', view:'login'});
 			ws.sendp({user:{showId:dbuser.showId, isAdmin:dbuser.isAdmin, bank:dbuser.bank, savedMoney:dbuser.savedMoney}});
 		}
 		else {
@@ -56,6 +57,7 @@ function afterUserIn(err, pack, ws, dbuser) {
 				g_db.p.users.update({_id:'showId'}, {$set:{v:dbuser.showId}}, {upsert:true});
 				dbuser.province=pack.province;
 				dbuser.city=pack.city;
+				dbuser.isGuest=pack.isGuest;
 				dbuser.coins=dbuser.coins;
 				ws.sendp({user:{showId:dbuser.showId, isAdmin:dbuser.isAdmin, bank:dbuser.bank, savedMoney:dbuser.savedMoney}});
 				delete dbuser.__created;
@@ -68,7 +70,8 @@ function afterUserIn(err, pack, ws, dbuser) {
 	if (!oldUser) {
 		ws.user=new User(ws, dbuser);
 		onlineUsers.add(ws.user);
-		dbuser.nickname=pack.nickname||pack.id;
+		if (pack.nickname) dbuser.nickname=pack.nickname;
+		else if (dbuser.nickname==null) dbuser.nickname=pack.id;
 		pack.face && (dbuser.face=pack.face);
 	}
 	else {
@@ -111,6 +114,7 @@ module.exports=function msgHandler(db, createDbJson, wss) {
 
 	wss.on('connection', function connection(ws) {
 		ws.sendp=ws.sendjson=send;
+		ws.__ob=true;
 		debugout('someone in');
 
 		ws.on('message', function(data) {
@@ -136,28 +140,39 @@ module.exports=function msgHandler(db, createDbJson, wss) {
 					})
 				break;
 				case 'reg':
+				db.users.find({nickname:(pack.nickname||pack.id)}).limit(1).toArray(function(err, arr) {
+					if (err) return ws.sendp({c:'regerr', msg:err.message, view:'login'});
+					if (arr.length>0) return ws.sendp({c:'regerr', msg:'昵称重复', view:'login', arr:arr});
 					createDbJson(db, {col:db.users, key:pack.id, alwayscreate:true, default:default_user}, function(err, dbuser) {
 						if (err) return ws.sendp({err:err});
-						if (!dbuser.__created) return ws.sendp({err:'用户已存在'});
-						dbuser.pwd=pack.pwd;
-						ws.user=new User(ws, dbuser);
-						dbuser.nickname=pack.nickname||pack.id;
-						pack.face && (dbuser.face=pack.face);
-						ws.sendp({c:'showview', v:'hall', user:dbuser, seq:1});
-						onlineUsers.add(ws.user);
-						//ws.sendp({user:{id:ws.user.id, nickname:ws.user.nickname, exp:ws.user.exp, }})
-						if (pack.room) ws.user.join(pack.room);
-						broadcast({c:'userin', userid:pack.id, nick:ws.user.nickname}, ws.user);
+						if (!dbuser.__created) return ws.sendp({err:{message:'用户已存在', view:'login'}});
+						afterUserIn(err, pack, ws, dbuser);
+						// dbuser.pwd=pack.pwd;
+						// ws.user=new User(ws, dbuser);
+						// dbuser.nickname=pack.nickname||pack.id;
+						// pack.face && (dbuser.face=pack.face);
+						// ws.sendp({c:'showview', v:'hall', user:dbuser, seq:1});
+						// onlineUsers.add(ws.user);
+						// //ws.sendp({user:{id:ws.user.id, nickname:ws.user.nickname, exp:ws.user.exp, }})
+						// if (pack.room) ws.user.join(pack.room);
+						// broadcast({c:'userin', userid:pack.id, nick:ws.user.nickname}, ws.user);
 					});
+				});
 				break;
 				case 'rol':
 					if (onlineUsers.get(pack.id)) {
 						debugout('already online, kick old');
 						afterUserIn(null, pack, ws, onlineUsers.get(pack.id).dbuser);
 					} 
-					else createDbJson(db, {col:db.users, key:pack.id, alwayscreate:true, default:default_user}, function(err, dbuser) {
+					else 
+					createDbJson(db, {col:db.users, key:pack.id, alwayscreate:true, default:default_user}, function(err, dbuser) {
 						debugout('new one');
-						afterUserIn(err, pack, ws, dbuser);
+						if (dbuser.__created) db.users.find({nickname:(pack.nickname||pack.id)}).limit(1).toArray(function(err, arr) {
+							if (err) return ws.sendp({c:'regerr', msg:err.message, view:'login'});
+							if (arr.length>0) return ws.sendp({c:'regerr', msg:'昵称重复', view:'login', arr:arr});
+							afterUserIn(err, pack, ws, dbuser);
+						});
+						else afterUserIn(err, pack, ws, dbuser);
 					});
 				break;
 				case 'alluser':

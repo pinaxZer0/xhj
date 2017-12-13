@@ -1,4 +1,4 @@
-webpackJsonp([2],{
+webpackJsonp([10],{
 
 /***/ 80:
 /***/ function(module, exports) {
@@ -169,7 +169,7 @@ webpackJsonp([2],{
 
 /***/ },
 
-/***/ 129:
+/***/ 252:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -177,7 +177,27 @@ webpackJsonp([2],{
 	var tongji = window.tongji = __webpack_require__(80);
 
 	function _noop() {}
-
+	// function getAjax(url, data, callback) {
+	// 	if (typeof data ==='function') {
+	// 		callback =data;
+	// 		data=null;
+	// 	}
+	// 	if (!callback) callback=function(){};
+	// 	$.ajax({
+	// 		type: "POST",
+	// 		url: url,
+	// 		dataType: "JSON",
+	// 		data: data,
+	// 		timeout:30000,
+	// 		success: function (chunk) {
+	// 			return callback(null, chunk);
+	// 		},
+	// 		error: function (e) {
+	// 			//if (typeof console == "object") console.log(e);
+	// 			callback(e);
+	// 		}
+	// 	})
+	// }
 	window.pay = function (orderid, money, desc, cb) {
 		!cb && (cb = _noop);
 		if (tipon) {
