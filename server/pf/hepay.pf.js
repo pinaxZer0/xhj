@@ -29,9 +29,13 @@ router.all('/sign', httpf({orderid:'string', money:'number', type:'number', call
     // debugout(this.req.headers);
 	if (this.req.headers['referer']) {
         var header=url.parse(this.req.headers['referer']);
-        header.search=header.path=undefined;
         header.pathname=path.join(header.pathname, this.req.baseUrl, this.req.path);
+    } else {
+        var header=url.parse(this.req.originalUrl);
+        header.protocol=req.protocol+':';
+        header.host=this.req.headers['host'];
     }
+    header.search=header.path=undefined;
     var supportedMethod=['1010','1000', '1013'];
     if (type<0 || type>=supportedMethod.length) type=0;
     var o={
