@@ -2,13 +2,14 @@ var shuffle = require('gy-shuffle'),
     baccaratHand = require('./baccarat-hand'),
     EventEmitter = require('events').EventEmitter,
     util = require('util');
-var pThirdCard = -1;
-var playerThirdCard;
-
-var shoe, player, banker;
 
 function Game() {
   EventEmitter.call(this);
+  
+  var pThirdCard = -1;
+  var playerThirdCard;
+  
+  var shoe, player, banker;
 
   var game = this;
   this.onPlayerInputNeeded;
@@ -204,22 +205,35 @@ util.inherits(Game, EventEmitter);
 module.exports = Game;
 
 if (module==require.main) {
-    var BaccaratGame = Game,
-    game = new BaccaratGame(),
-    input = process.openStdin();
+    var BaccaratGame = Game;
+    for (var i=0; i<100; i++) {
+      var game = new BaccaratGame();
+      game.begin();
+      game.on('result', function(detail) {
+        console.log(detail);
+        process.nextTick(function() {
+          if (game.leftCards<14) game.begin();
+          game.playHand();  
+        })
+      })
+      game.playHand();
+    }
 
-    input.setEncoding('utf8');
+    // input = process.openStdin();
 
-    game.on('input', function(callback){
-        input.once('data', function(command){
-            callback(command.substring(0, command.length -1));
-        });
-    })
-    .on('burn', console.log)
-    .on('draw', console.log)
-    .on('result', console.log)
-    .on('end', function(){
-        input.destroy();
-    });
-    game.begin();
+    // input.setEncoding('utf8');
+
+    // game.on('input', function(callback){
+    //     input.once('data', function(command){
+    //         callback(command.substring(0, command.length -1));
+    //     });
+    // })
+    // .on('burn', console.log)
+    // .on('draw', console.log)
+    // .on('result', console.log)
+    // .on('end', function(){
+    //     input.destroy();
+    // });
+    // game.begin();
+
 }

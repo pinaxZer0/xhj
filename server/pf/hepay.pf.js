@@ -32,7 +32,7 @@ router.all('/sign', httpf({orderid:'string', money:'number', type:'number', call
         header.pathname=path.join(header.pathname, this.req.baseUrl, this.req.path);
     } else {
         var header=url.parse(this.req.originalUrl);
-        header.protocol=req.protocol+':';
+        header.protocol=this.req.protocol+':';
         header.host=this.req.headers['host'];
     }
     header.search=header.path=undefined;

@@ -8,6 +8,7 @@ module.exports = function(cards){
     this.cards=[];
   }
   this.push = function(card){
+    if (card==null) throw(new Error('card is null|undefined'));
     this.cards.push(card);
   };
 
