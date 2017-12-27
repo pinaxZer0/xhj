@@ -1,3 +1,5 @@
+'use strict';
+
 var printf=require('printf'), clone=require('clone'), async=require('async'), assert=require('assert'), path=require('path');
 var ss=require('./ss.js');
 var args=require('yargs')
@@ -110,7 +112,24 @@ function afterUserIn(err, pack, ws, dbuser) {
 	if (pack.room) return ws.sendp({err:'没有这个桌子号',seq:1});
 }
 module.exports=function msgHandler(db, createDbJson, wss) {
-	g_db={p:db, createDbJson:createDbJson};
+	global.g_db={p:db, createDbJson:createDbJson};
+
+	// restore user score if server crashed
+	db.servers.find({_id:{$ne:'statement'}}, {fields:{'xiazhu':1}}).toArray(function(err, r) {
+		if (err) return console.error('db err', err);
+		for (let i=0; i<r.length; i++) {
+			for (let u in r[i].xiazhu) {
+				let deal=r[i].xiazhu[u];
+				let total=deal.xian+deal.zhuang+deal.xianDui+deal.zhuangDui+deal.he;
+				User.fromID(u, function(err, user) {
+					if (err) return;
+					user.coins+=total;
+				});
+			}
+		}
+
+		db.servers.updateMany({}, {$unset:{xiazhu:1}});
+	});
 
 	wss.on('connection', function connection(ws) {
 		ws.sendp=ws.sendjson=send;

@@ -106,7 +106,7 @@ function init_tables() {
 			}
 			db.servers.insertMany(o);
 		}
-		db.servers.find({_id:{$ne:'statement'}}).sort({'order':-1}).toArray(function(err, r) {
+		db.servers.find({_id:{$ne:'statement'}}, {fields:{'xiazhu':0}}).sort({'order':-1}).toArray(function(err, r) {
 			if (err) return innerServer();
 			_tables={};
 			if (r.length==0) return innerServer();

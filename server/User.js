@@ -147,6 +147,7 @@ class User extends EventEmitter {
 	}
 	send(msg) {return this.ws && this.ws.sendp(msg);}
 	senderr(e) {return this.send({err:e})}
+	err(e) {return this.senderr(e)}
 	// close(msg) {
 	// 	if (!msg) msg={c:'kick', reason:'账号在其他地方登录了'};
 	// 	this.send(msg);
@@ -295,13 +296,6 @@ class User extends EventEmitter {
 	set coins(n) {
 		this.dbuser.coins=n;
 		this.send({user:{coins:n}});
-	}
-	set lockedCoins(n) {
-		this._lockedCoins=n;
-		this.send({user:{lockedCoins:n}});
-	}
-	get lockedCoins() {
-		return this._lockedCoins;
 	}
 	get bank() {
 		return this.dbuser.bank;
@@ -628,10 +622,10 @@ class User extends EventEmitter {
 			case 'waterbill':
 				async.parallel([
 					function(cb) {
-						g_db.p.withdraw.find({from:self.id}).limit(20).toArray(cb);
+						g_db.p.withdraw.find({from:self.id}).sort({_t:-1}).limit(20).toArray(cb);
 					},
 					function(cb) {
-						g_db.p.bills.find({user:self.id, used:true}).limit(20).toArray(cb);
+						g_db.p.bills.find({user:self.id, used:true}).sort({time:-1}).limit(20).toArray(cb);
 					}
 				],
 				function(err, r) {
@@ -646,6 +640,62 @@ class User extends EventEmitter {
 					}
 					final.sort(function(a, b) {return b.time-a.time});
 					self.send({c:'waterbill', data:final.slice(0, 20)});
+				});
+			break;
+			case 'admin.waterbill':
+				if (!self.dbuser.isAdmin) return self.senderr('无权限');
+				async.parallel([
+					function(cb) {
+						g_db.p.games.find({user:pack.id}).sort({t:-1}).limit(40).toArray(cb);
+					},
+					function(cb) {
+						g_db.p.withdraw.find({from:pack.id}).sort({_t:-1}).limit(40).toArray(cb);
+					},
+					function(cb) {
+						g_db.p.bills.find({user:pack.id, used:true}).sort({time:-1}).limit(40).toArray(cb);
+					}
+				],
+				function(err, r) {
+					if (err) return self.senderr(err);
+					var rechargeList=r[2], withdrawList=r[1], gameList=r[0];
+					var final=[];
+					for (var i=0; i<gameList.length; i++) {
+						var delta=gameList[i].newCoins-gameList[i].oldCoins;
+						final.push({time:gameList[i].t, rmb:delta, type:(delta<0?'输':(delta>0?'赢':'平'))});
+					}
+					for (var i=0; i<rechargeList.length; i++) {
+						final.push({time:rechargeList[i].time, rmb:rechargeList[i].pack.rmb, type:'存入'});
+					}
+					for (var i=0; i<withdrawList.length; i++) {
+						final.push({time:withdrawList[i]._t, rmb:(withdrawList[i].rmb+withdrawList[i].fee), type:'取出'});
+					}
+					final.sort(function(a, b) {return b.time-a.time});
+					self.send({c:'admin.waterbill', data:final.slice(0, 40)});
+				});
+			break;
+			case 'admin.backbill':
+				if (!self.dbuser.isAdmin) return self.senderr('无权限');
+				if (pack.token!=self.storedUploadToken.token) return self.senderr('token错误');
+				var errlog={};
+				async.each(self.storedUploadToken.data, function(item, cb) {
+					g_db.bills.findOneAndDelete({_id:ObjectID(item._id)}, function(err,r) {
+						if (err) {
+							errlog[item._id]=err;
+							cb();
+						}else {
+							User.fromID(r.user, function(err, u) {
+								if (err) {
+									errlog[item._id]=err;
+									cb();
+								}
+								else u.coins+=r.rmb;
+								cb();
+							});
+						}
+					})
+				},
+			 	function (err) {
+					self.send({c:'admin.backbill', r:errlog});
 				});
 			break;
 			case 'safe.deposit':

@@ -6,6 +6,8 @@ var httpf=require('httpf');
 var getDB=require('../db.js'), ObjectID = require('mongodb').ObjectID;
 var User=require('../User.js');
 var exportXls=require('../exportxls.js'), XLSX=require('xlsx'), fs=require('fs'), path=require('path');
+var Busboy = require('busboy');
+var randstring=require('randomstring').generate;
 
 function toDateString(date, noTimeString) {
     if (typeof date=='string') date=new Date(date);
@@ -57,6 +59,31 @@ getDB(function(err, db) {
             });
         });
     }));
+    router.all('/upxlsx', function(req, res) {
+        var buffers = [], userid=null;
+        var bb=new Busboy({headers:req.headers});
+        busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
+            file.on('data', function(data) {
+                buffers.push(data);
+            });
+            file.on('end', function() {
+                var buffer = Buffer.concat(buffers);
+                var wb = XLSX.read(buffer, {type:"buffer"});
+                var target_sheet = (wb.SheetNames||[""])[0];
+                var ws = wb.Sheets[target_sheet];
+                var obj=XLSX.utils.sheet_to_json(ws,{header:1});
+                userid && User.fromID(userid, function(err, user) {
+                    if (err) return res.send({err:err}).end();
+                    user.storedUploadToken.token=randstring();
+                    user.storedUploadToken.data=obj;
+                    res.send({uptoken:user.storedUploadToken});
+                });
+            });
+        });
+        busboy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) {
+            if (fieldname=='id') userid=val;
+        });
+    });
 });
 
 router.all('/allprovince', httpf(function() {

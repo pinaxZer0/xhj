@@ -73,8 +73,7 @@ class Baijiale extends TableBase {
 		}
 		// 下注重入
 		if (gd.deal && gd.deal[user.id] && gd.deal[user.id].user) {
-			debugout('user in&rein'.cyan, gd.deal[user.id].user.coins,gd.deal[user.id].user.lockedCoins);
-			user.lockedCoins=gd.deal[user.id].user.lockedCoins;
+			debugout('user in&rein'.cyan, gd.deal[user.id].user.coins);
 			user.coins=gd.deal[user.id].user.coins;
 			gd.deal[user.id].user=user;
 		}
@@ -109,7 +108,7 @@ class Baijiale extends TableBase {
 				if (!seat) continue;
 				var u=this.scene.seats[i].user;
 				if (u) {
-					seat.user={id:u.id, nickname:u.nickname, face:u.dbuser.face, coins:u.coins, level:u.level, offline:seat.offline, lockedCoins:u.lockedCoins};
+					seat.user={id:u.id, nickname:u.nickname, face:u.dbuser.face, coins:u.coins, level:u.level, offline:seat.offline};
 				}
 			}
 		}
@@ -184,14 +183,14 @@ class Baijiale extends TableBase {
 		function handleXiazhu(pack, user) {
 			var deal=gd.deal[user.id];
 			if (!deal) {
-				gd.deal[user.id]={xianDui:0, zhuangDui:0, he:0, xian:0, zhuang:0, user:user};
+				gd.deal[user.id]={xianDui:0, zhuangDui:0, he:0, xian:0, zhuang:0, user:user, orgCoins:user.coins};
 				deal=gd.deal[user.id];
 			}
 			if (deal.sealed) return;
-			var userTotal=deal.xian+deal.zhuang+deal.xianDui+deal.zhuangDui+deal.he;
+			// var userTotal=deal.xian+deal.zhuang+deal.xianDui+deal.zhuangDui+deal.he;
 			var curDeal=(pack.xian||0)+(pack.zhuang||0)+(pack.xianDui||0)+(pack.zhuangDui||0)+(pack.he||0);
-			var total_deal=curDeal+userTotal;
-			if (total_deal>user.coins) return user.send({err:{message:'资金不足，请充值', win:'RechargeWin', askUser:true}});
+			// var total_deal=curDeal+userTotal;
+			if (curDeal>user.coins) return user.send({err:{message:'资金不足，请充值', win:'RechargeWin', askUser:true}});
 
 			debugout(pack, total);
 			if (pack.xian) {
@@ -199,37 +198,40 @@ class Baijiale extends TableBase {
 				if ((pack.xian+deal.xian)>gd.opt.maxZhu) return user.send({err:'最多下注'+gd.opt.maxZhu});
 				deal.xian+=pack.xian;
 				total.xian+=pack.xian;
-				// user.coins-=pack.xian;
+				user.coins-=pack.xian;
 			}
 			else if (pack.zhuang) {
 				if (pack.zhuang<gd.opt.minZhu) return user.send({err:'最少下注'+gd.opt.minZhu});
 				if ((pack.zhuang+deal.zhaung)>gd.opt.maxZhu) return user.send({err:'最多下注'+gd.opt.maxZhu});
 				deal.zhuang+=pack.zhuang;
 				total.zhuang+=pack.zhuang;
-				// user.coins-=pack.zhuang;
+				user.coins-=pack.zhuang;
 			}
 			else if (pack.he) {
 				if (pack.he<gd.opt.minDui) return user.send({err:'最少下注'+gd.opt.minDui});
 				if ((deal.he+pack.he)>gd.opt.maxHe) return user.send({err:'最多下注'+gd.opt.maxHe});
 				deal.he+=pack.he;
 				total.he+=pack.he;
-				// user.coins-=pack.he;
+				user.coins-=pack.he;
 			}
 			else if (pack.xianDui) {
 				if (pack.xianDui<gd.opt.minDui) return user.send({err:'最少下注'+gd.opt.minDui});
 				if ((deal.xianDui+pack.xianDui)>gd.opt.maxDui) user.send({err:'最多下注'+gd.opt.maxDui});
 				deal.xianDui+=pack.xianDui;
 				total.xianDui+=pack.xianDui;
-				// user.coins-=pack.xianDui;
+				user.coins-=pack.xianDui;
 			}
 			else if (pack.zhuangDui) {
 				if (pack.zhuangDui<gd.opt.minDui) return user.send({err:'最少下注'+gd.opt.minDui});
 				if ((pack.zhuangDui+deal.zhuangDui)>gd.opt.maxDui) user.send({err:'最多下注'+gd.opt.maxDui});
 				deal.zhuangDui+=pack.zhuangDui;
 				total.zhuangDui+=pack.zhuangDui;
-				// user.coins-=pack.zhuangDui;
+				user.coins-=pack.zhuangDui;
 			}
-			user.lockedCoins=total_deal;
+			// write to db
+			var op={};
+			op['xiazhu.'+self.id]=deal;
+			g_db.servers.update({_id:self.roomid}, {$set:op});
 		}
 		function handleCancelXiazhu(pack, user) {
 			var deal=gd.deal[user.id];
@@ -276,8 +278,10 @@ class Baijiale extends TableBase {
 		debugout(this.roomid, 'jiesuan');
 		this.gamedata.status=GAME_STATUS.JIESUAN;
 		var profit=0;
-		var factor={xian:1, zhuang:0.95, xianDui:11, zhuangDui:11, he:8};
+		var factor={xian:2, zhuang:1.95, xianDui:12, zhuangDui:12, he:9};
 		var self=this, gd=this.gamedata;
+		// clear servers temp data
+		g_db.servers.update({_id:self.roomid}, {$unset:{'xiazhu':''}});
 		var r=gd.his[gd.his.length-1];
 		var winArr=[], loseArr, tieArr=[];
 		if (r.win=='tie') {
@@ -307,10 +311,13 @@ class Baijiale extends TableBase {
 		var user_win_list=[];
 		for (var k in gd.deal) {
 			var deal=gd.deal[k];
-			deal.user.lockedCoins=0;
+			var total_deal=0;
+			['zhuang', 'xian', 'he', 'xianDui', 'zhuangDui'].forEach(function(sect) {
+				if (deal[sect]) total_deal+=deal[sect];
+			});
 			updObj.seats[k]={user:deal.user};
 			// var orgCoins=deal.user.coins;
-			var userwin=0, userlose=0;
+			var userwin=0, userlose=0, usertie=0;
 			for (var i=0;i<winArr.length; i++) {
 				var usercoins=deal[winArr[i]]
 				if (!usercoins) continue;
@@ -327,6 +334,11 @@ class Baijiale extends TableBase {
 				// modifyUserCoins(deal.user, d);
 				profit-=delta;
 				debugout('player win(id, qu, wins)', deal.user.id, winArr[i], delta);
+			}
+			for (var i=0; i<tieArr.length; i++) {
+				var usercoins=deal[tieArr[i]]
+				if (!usercoins) continue;
+				usertie+=usercoins;
 			}
 			for (var i=0; i<loseArr.length; i++) {
 				var usercoins=deal[loseArr[i]];
@@ -345,26 +357,21 @@ class Baijiale extends TableBase {
 			// modifyUserCoins(deal.user, finaldelta);
 			var u=deal.user;
 			// deal.user=undefined;
-			user_win_list.push({user:u, deal:deal, win:userwin, lose:userlose});
+			user_win_list.push({user:u, deal:deal, win:userwin, tie:usertie, lose:userlose});
 		}
 		for (var i=0; i<user_win_list.length; i++) {
 			var obj=user_win_list[i];
 			var delta=0;
 			if (obj.win>0) {
-				// var d=Math.round(waterRatio*obj.win);
-				// water+=(obj.win-d);
-				// delta+=d;
 				delta+=obj.win;
 			}
-			delta-=obj.lose;
-			var orgCoins=obj.user.coins;
+			if (obj.tie>0) delta+=obj.tie;
 			var u=obj.deal.user;
 			obj.deal.user=undefined;
-			// obj.user.send({c:'setprofit', p:delta});
 			modifyUserCoins(obj.user, delta);
 			var newCoins=obj.user.coins;
 			debugout('user', obj.user.id, 'score chgd', delta, obj.user.coins);
-			g_db.games.insertOne({user:obj.user.id, deal:obj.deal, r:r, oldCoins:orgCoins, newCoins:newCoins, t:now}, function(err, r) {
+			g_db.games.insertOne({user:obj.user.id, deal:obj.deal, r:r, oldCoins:obj.deal.orgCoins, newCoins:newCoins, t:now}, function(err, r) {
 				debugout(err, r);
 			});
 			obj.deal.user=u;
@@ -422,7 +429,7 @@ class Baijiale extends TableBase {
 }
 function modifyUserCoins(user, delta) {
 	user.dbuser.coins+=delta;
-	user.send({user:{coins:user.dbuser.coins}});
+	user.send({user:{coins:user.dbuser.coins}, seq:1});
 }
 
 module.exports=Baijiale;
