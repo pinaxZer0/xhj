@@ -116,16 +116,21 @@ module.exports=function msgHandler(db, createDbJson, wss) {
 	// restore user score if server crashed
 	db.servers.find({_id:{$ne:'statement'}}, {fields:{'xiazhu':1}}).toArray(function(err, r) {
 		if (err) return console.error('db err', err);
+		var backlist={};
 		for (let i=0; i<r.length; i++) {
 			for (let u in r[i].xiazhu) {
 				let deal=r[i].xiazhu[u];
 				let total=deal.xian+deal.zhuang+deal.xianDui+deal.zhuangDui+deal.he;
-				User.fromID(u, function(err, user) {
-					if (err) return;
-					user.coins+=total;
-				});
+				backlist[u]=(backlist[u]||0)+total;
 			}
 		}
+		async.eachOf(backlist, function(backcoins, u, cb) {
+			User.fromID(u, function(err, user) {
+				if (err) return cb();
+				user.coins+=backcoins;
+				cb();
+			});
+		});
 
 		db.servers.updateMany({}, {$unset:{xiazhu:1}});
 	});
@@ -215,3 +220,15 @@ module.exports=function msgHandler(db, createDbJson, wss) {
 setInterval(function() {
 	ss('onlineCount', {count:onlineUsers.length});
 }, 60*1000);
+
+// process.on('SIGINT', function() {
+// 	console.log('recv quit signal, wait all tables quit@', new Date());
+// 	var ss=alltables.alltbls();
+// 	async.each(ss, function(s, cb) {
+// 		s.safeStop(cb);
+// 	},
+// 	function() {
+// 		console.log('safe quit@', new Date());
+// 		process.exit(0);
+// 	})
+// });
