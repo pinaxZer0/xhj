@@ -221,14 +221,14 @@ setInterval(function() {
 	ss('onlineCount', {count:onlineUsers.length});
 }, 60*1000);
 
-// process.on('SIGINT', function() {
-// 	console.log('recv quit signal, wait all tables quit@', new Date());
-// 	var ss=alltables.alltbls();
-// 	async.each(ss, function(s, cb) {
-// 		s.safeStop(cb);
-// 	},
-// 	function() {
-// 		console.log('safe quit@', new Date());
-// 		process.exit(0);
-// 	})
-// });
+process.on('SIGINT', function() {
+	console.log('recv quit signal, wait all tables quit@', new Date());
+	var ss=alltables.alltbls();
+	async.each(ss, function(s, cb) {
+		s.safeStop(cb);
+	},
+	function() {
+		console.log('safe quit@', new Date());
+		process.exit(0);
+	})
+});
