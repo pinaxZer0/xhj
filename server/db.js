@@ -11,7 +11,7 @@ module.exports=function (cb) {
 		{users:{index:['nickname', 'coins', 'diamond', 'showId']}},
 		{bills:{index:['user'], capped:true, size:100*1024, max:100000}},
 		{mails:{index:['to', 'from', 'used'], capped:true, size:100*1024, max:100000}}, 
-		{withdraw:{index:['from', '_t', 'exported']}}, 
+		{withdraw:{index:['from', '_t', 'status']}}, 
 		{servers:{index:['order']}},
 		{games:{index:['user', 't'], capped:true, size:100*1024*1024, max:1000000}},
 		]}, function(err, db) {

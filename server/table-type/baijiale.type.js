@@ -230,8 +230,8 @@ class Baijiale extends TableBase {
 			}
 			// write to db
 			var op={};
-			op['xiazhu.'+self.id]=deal;
-			g_db.servers.update({_id:self.roomid}, {$set:op});
+			op['xiazhu.'+user.id]={xian:deal.xian, zhuang:deal.zhuang, he:deal.he, xianDui:deal.xianDui, zhuangDui:deal.zhuangDui};
+			g_db.servers.updateOne({_id:self.roomid}, {$set:op}, function(err) {if (err) debugout(err.toString().cyan)});
 		}
 		function handleCancelXiazhu(pack, user) {
 			var deal=gd.deal[user.id];
@@ -242,9 +242,12 @@ class Baijiale extends TableBase {
 			total.he-=deal.he;
 			total.xian-=deal.xian;
 			total.zhuang-=deal.zhuang;
-			// var reback=(deal.xian||0)+(deal.xianDui||0)+(deal.zhuangDui||0)+(deal.he||0)+(deal.zhuang||0);
-			// deal.user.coins+=reback;
+			var reback=(deal.xian||0)+(deal.xianDui||0)+(deal.zhuangDui||0)+(deal.he||0)+(deal.zhuang||0);
+			deal.user.coins+=reback;
 			deal.xian=deal.xianDui=deal.zhuangDui=deal.he=deal.zhuang=0;
+			var op={};
+			op['xiazhu.'+user.id]='';
+			g_db.servers.update({_id:this.roomid}, {$unset:op});
 			// delete gd.deal[user.id];
 		}
 		function handleConfirmXiazhu(pack, user) {

@@ -61,7 +61,7 @@ getDB(function(err, db) {
     }));
     router.all('/upxlsx', function(req, res) {
         var buffers = [], userid=null;
-        var bb=new Busboy({headers:req.headers});
+        var busboy=new Busboy({headers:req.headers});
         busboy.on('file', function(fieldname, file, filename, encoding, mimetype) {
             file.on('data', function(data) {
                 buffers.push(data);
@@ -71,18 +71,18 @@ getDB(function(err, db) {
                 var wb = XLSX.read(buffer, {type:"buffer"});
                 var target_sheet = (wb.SheetNames||[""])[0];
                 var ws = wb.Sheets[target_sheet];
-                var obj=XLSX.utils.sheet_to_json(ws,{header:1});
+                var obj=XLSX.utils.sheet_to_json(ws,{});
                 userid && User.fromID(userid, function(err, user) {
                     if (err) return res.send({err:err}).end();
-                    user.storedUploadToken.token=randstring();
-                    user.storedUploadToken.data=obj;
-                    res.send({uptoken:user.storedUploadToken});
+                    user.storedUploadToken={token:randstring(),data:obj};
+                    res.send(user.storedUploadToken);
                 });
             });
         });
         busboy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) {
             if (fieldname=='id') userid=val;
         });
+        req.pipe(busboy);
     });
 });
 

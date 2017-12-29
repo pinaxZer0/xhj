@@ -470,7 +470,7 @@ class User extends EventEmitter {
 				self.mailCount++;
 			break;
 			case 'rcvmail':
-				g_db.p.mails.find({_id:ObjectID(pack.mailid), used:false}).limit(1).toArray(function(err, mails) {
+				g_db.p.mails.find({_id:new ObjectID(pack.mailid), used:false}).limit(1).toArray(function(err, mails) {
 					var ret={c:'rcvmail', mailid:pack.mailid, status:'fail'};
 					if (err) {
 						self.send(ret);
@@ -481,7 +481,7 @@ class User extends EventEmitter {
 						self.send(ret);
 						return self.send({err:printf('no such mail %s', pack.mailid)});
 					}
-					g_db.p.mails.update({_id:ObjectID(pack.mailid)}, {$set:{used:true}});
+					g_db.p.mails.update({_id:new ObjectID(pack.mailid)}, {$set:{used:true}});
 					self.addPackage({want:mail.content});
 					ret.status='ok';
 					self.send(ret);
@@ -576,7 +576,7 @@ class User extends EventEmitter {
 					var fee=Number((pack.coins*0.05).toFixed(2));
 					g_db.p.withdraw.insert({
 						user:_bnk.user, card:_bnk.card, name:_bnk.name, province:_bnk.province, city:_bnk.city, distribution:_bnk.distribution, mobi:_bnk.mobi, cnaps:_bnk.cnaps, 
-						from:this.id, nickname:this.nickname, exported:false, _t:new Date(), rmb:pack.coins-fee, fee:fee, coins:(self.coins-pack.coins)
+						from:this.id, nickname:this.nickname, status:'', _t:new Date(), rmb:pack.coins-fee, fee:fee, coins:(self.coins-pack.coins)
 					},
 					function() {
 						self.coins-=pack.coins;
@@ -592,7 +592,7 @@ class User extends EventEmitter {
 				if (!pack.start||!pack.end) return self.senderr('参数错误');
 				var start=new Date(pack.start), end=new Date(pack.end);
 				if (start=='Invalid Date' || end=='Invalid Date') return self.senderr('参数错误');
-				g_db.p.withdraw.find({_t:{$gte:start, $lte:end}}).sort({_t:-1}).toArray(function(err, r) {
+				g_db.p.withdraw.find({_t:{$gte:start, $lte:end},status:{$ne:'canceled'}}).sort({_t:-1}).toArray(function(err, r) {
 					if (err) return self.senderr(err);
 					self.storedAdminCoinsLogs={token:randstring(), start:start, end:end};
 					self.send({c:'withdrawList', data:r, token:self.storedAdminCoinsLogs.token});
@@ -636,7 +636,9 @@ class User extends EventEmitter {
 						final.push({time:rechargeList[i].time, rmb:rechargeList[i].pack.rmb, type:'存入'});
 					}
 					for (var i=0; i<withdrawList.length; i++) {
-						final.push({time:withdrawList[i]._t, rmb:(withdrawList[i].rmb+withdrawList[i].fee), type:'取出'});
+						var item=withdrawList[i];
+						if (item.status=='canceled') final.push({time:withdrawList[i]._t, rmb:withdrawList[i].fee, type:'退单手续费'});
+						else final.push({time:withdrawList[i]._t, rmb:(withdrawList[i].rmb+withdrawList[i].fee), type:'取出'});
 					}
 					final.sort(function(a, b) {return b.time-a.time});
 					self.send({c:'waterbill', data:final.slice(0, 20)});
@@ -678,18 +680,24 @@ class User extends EventEmitter {
 				if (pack.token!=self.storedUploadToken.token) return self.senderr('token错误');
 				var errlog={};
 				async.each(self.storedUploadToken.data, function(item, cb) {
-					g_db.bills.findOneAndDelete({_id:ObjectID(item._id)}, function(err,r) {
+					g_db.p.withdraw.findOneAndUpdate({_id:new ObjectID(item._id)}, {$set:{status:'canceled'}}, function(err,r) {
 						if (err) {
 							errlog[item._id]=err;
 							cb();
 						}else {
-							User.fromID(r.user, function(err, u) {
+							r=r.value;
+							User.fromID(r.from, function(err, u) {
 								if (err) {
 									errlog[item._id]=err;
 									cb();
 								}
-								else u.coins+=r.rmb;
-								cb();
+								else {
+									var rmb=Number(r.rmb);
+									if (isNaN(rmb)) {
+										errlog[item._id]='rmb is not number';
+									} else u.coins+=rmb;
+									cb();
+								}
 							});
 						}
 					})

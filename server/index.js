@@ -113,7 +113,6 @@ function afterUserIn(err, pack, ws, dbuser) {
 }
 module.exports=function msgHandler(db, createDbJson, wss) {
 	global.g_db={p:db, createDbJson:createDbJson};
-
 	// restore user score if server crashed
 	db.servers.find({_id:{$ne:'statement'}}, {fields:{'xiazhu':1}}).toArray(function(err, r) {
 		if (err) return console.error('db err', err);
