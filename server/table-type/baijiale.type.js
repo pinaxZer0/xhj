@@ -429,6 +429,22 @@ class Baijiale extends TableBase {
 			setTimeout(cb, delay);
 		});
 	}
+	safeStop(cb) {
+		if (this.allusers().length==0 && (!this.gamedata.deal || Object.keys(this.gamedata.deal).length==0)) return cb();
+		var self=this;
+		function prepareQuit(next) {
+			self.broadcast({c:'table.chat', role:'系统', str:'本局结束后将进行停机维护\r\n您可能会看见屏幕闪烁，或者断线提示\r\n请勿担心，10秒之后我们就会恢复服务'});
+			process.nextTick(function() {
+				self.q.push(function() {
+					// stoped
+					cb();
+				});
+			});
+			next && next();
+		}
+		if (this.gamedata.status==GAME_STATUS.JIESUAN) this.q.unshift(prepareQuit)
+		else prepareQuit();
+	}
 }
 function modifyUserCoins(user, delta) {
 	user.dbuser.coins+=delta;
