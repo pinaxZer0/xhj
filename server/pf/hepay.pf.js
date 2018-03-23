@@ -7,7 +7,7 @@ var getDB=require('../db.js'), ObjectID = require('mongodb').ObjectID;
 var User=require('../User.js');
 var _=require('lodash'),async=require('async'), request=require('request');
 
-const merchant_id='71296011003367424', merchant_key='7EC46DRU8B3B29A761E56121C69BM800';
+const merchant_id='72378478816792576', merchant_key='1f17d2a3fcad856c92fe8cf9536c6798';
 function combineObj(o) {
     var r='';
     for (var k in o) {

@@ -1,8 +1,8 @@
 {
-  "5.5.js?b4f8ae5c6c01428dca20": "5.5.js?b4f8ae5c6c01428dca20",
-  "6.6.js?855b0fdfb94eb8961f98": "6.6.js?855b0fdfb94eb8961f98",
-  "7.7.js?1ee1250e876d14ff548a": "7.7.js?1ee1250e876d14ff548a",
-  "8.8.js?51eccdcdcbff5b4e96b5": "8.8.js?51eccdcdcbff5b4e96b5",
+  "5.5.js?aa0ee41383bf312da060": "5.5.js?aa0ee41383bf312da060",
+  "6.6.js?864f7a1938603aed5c4f": "6.6.js?864f7a1938603aed5c4f",
+  "7.7.js?87a2f695491c44f34a01": "7.7.js?87a2f695491c44f34a01",
+  "8.8.js?f19b3f101e4995b118e8": "8.8.js?f19b3f101e4995b118e8",
   "baccarat.fui": "baccarat.fui?352a6daae02d84301c2fe5dd2ffc9fcd",
   "baccarat@atlas0.png": "baccarat@atlas0.png?2770afe8e79035ccabbf3b55a20f8eb4",
   "baccarat@atlas0_1.png": "baccarat@atlas0_1.png?12179e396969c24c8531a34400457291",
@@ -27,10 +27,10 @@
   "clock.mp3": "clock.mp3?c1aced506c948d03533e355365409d60",
   "company.jpg": "company.jpg?0e60234108358020b5a5e53acdd2a2e6",
   "deal.mp3": "deal.mp3?0e98b6ad29bce0d9db74758644240512",
-  "default.js": "1.default.js?d5909e6bcc7c2f58e3b9",
-  "entry.js": "entry.js?f0f6b09bb974945bdb6e",
-  "hepay.js": "2.hepay.js?98c741165549d706d1cc",
-  "inapp.js": "3.inapp.js?3e338733c50834cbf8c2",
+  "default.js": "1.default.js?f7f2e1624ed05da8a8b6",
+  "entry.js": "entry.js?a86ef403731cc55f5b9e",
+  "hepay.js": "2.hepay.js?232cfb38f56778ff3436",
+  "inapp.js": "3.inapp.js?e390b4a6c3e04a3a2902",
   "ingameBGMMono.mp3": "ingameBGMMono.mp3?e2f1dae4237ad6d5be9aacbcd2975699",
   "loader.js": "loader.js?07064efc17de2a12e842",
   "play0.mp3": "play0.mp3?d332e9c6f843daf1fddd8cbc8a224151",
@@ -48,5 +48,5 @@
   "playwin.mp3": "playwin.mp3?4854851a8b397ba9b21d87ef54e83394",
   "pleasebet.mp3": "pleasebet.mp3?414cc71ec543e8921a3bcc630db8b3b4",
   "tie.mp3": "tie.mp3?498dc41dcd1847af774710878480c743",
-  "wechat.js": "4.wechat.js?524110715870adf9a335"
+  "wechat.js": "4.wechat.js?ffe4bdb47ab215d7341c"
 }
