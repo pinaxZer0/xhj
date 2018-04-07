@@ -3,7 +3,7 @@
 <head>
 	<meta charset='utf-8'/>
 	<title></title>
-	<meta name='viewport' content='width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no'/>
+	<meta name='viewport' content='width=device-width,height=device-height,viewport-fit=cover,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no'/>
 	<meta name='apple-mobile-web-app-capable' content='yes' />
 	<meta name='full-screen' content='true' />
 	<meta name='screen-orientation' content='landscape' />
@@ -11,12 +11,14 @@
 	<meta name='360-fullscreen' content='true' />
 	<meta http-equiv='expires' content='0' />
 </head>
+<style>
+</style>
 <body style="background-color:#000">
 	<script src="cordova.js"></script>
 
 	<script src="js/jquery.min.js"></script>
 
-	<script>window.server='http://123.1.195.129:7010/'</script>
+	<script>window.server='http://bjl8000.com:7010/'</script>
 	<!--<script src="entry.js"></script>-->
 	<script>
 	    function loadScript(src, callback) {
@@ -41,6 +43,7 @@
 			if (window.AndroidFullScreen) {
 				AndroidFullScreen.immersiveMode(function() {}, function() {});
 			} else if (window.StatusBar) {
+				StatusBar.overlaysWebView=false;
 				StatusBar.hide();
 			}
 			if (window.device.platform === 'iOS') {

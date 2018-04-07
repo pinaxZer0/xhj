@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<body style="background-color:#fff">
+</body>
+<script src="cordova.js"></script>
+
+<script src="js/jquery.min.js"></script>
+
+<script>window.server='http://192.168.1.25:7008/'</script>
+<!--<script src="entry.js"></script>-->
+<script>
+    function loadScript(src, callback) {
+        jQuery.ajax({
+            crossDomain: true,
+            dataType: "script",
+            url: src,
+            cache:true,
+            success: function(){
+                typeof callback === 'function' && callback();
+            },
+            error: function(e){
+                typeof callback === 'function' && callback(e);
+            }
+        })
+    }
+    function onDeviceReady() {
+        document.addEventListener('backbutton', function(e){
+            e.preventDefault();
+            if (confirm('确定退出吗？')) navigator.app.exitApp();
+        }, false);
+        if (window.AndroidFullScreen) {
+            AndroidFullScreen.immersiveMode(function() {}, function() {});
+        } else if (window.StatusBar) {
+            StatusBar.hide();
+        }
+        if (window.device.platform === 'iOS') {
+            cordova.plugins.iosrtc && cordova.plugins.iosrtc.registerGlobals();
+        }
+        loadScript('./entry.js');
+    }
+    // document.addEventListener('deviceready', onDeviceReady, false);	
+</script>
+<script src="http://sdk.talkingdata.com/g/h5/v1/5BC096F31D8F48CF9238213D2FA47E19" type="text/javascript"></script>
+
+</html>
