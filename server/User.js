@@ -570,6 +570,7 @@ class User extends EventEmitter {
 				else this.send({c:'alltables', tables:alltables.all()});
 			break;
 			case 'withdraw':
+				if (pack.coins<0) return self.senderr('参数错误');
 				if (self.coins>=pack.coins) {
 					var _bnk=self.bank;
 					if (_bnk==null) return self.senderr('未提供银行卡号');
@@ -707,11 +708,13 @@ class User extends EventEmitter {
 				});
 			break;
 			case 'safe.deposit':
+				if (pack.coins<0) return self.senderr('参数错误');
 				if (self.coins<pack.coins) return self.senderr('现金不足');
 				self.savedMoney+=pack.coins;
 				self.coins-=pack.coins;
 			break;
 			case 'safe.withdraw':
+				if (pack.coins<0) return self.senderr('参数错误');
 				if (self.savedMoney<pack.coins) return self.senderr('保险箱中没有那么多资金');
 				self.savedMoney-=pack.coins;
 				self.coins+=pack.coins;
