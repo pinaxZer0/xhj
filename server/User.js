@@ -8,7 +8,9 @@ var randstring=require('randomstring').generate;
 var ObjectID = require('mongodb').ObjectID;
 var debugout=require('debugout')(require('yargs').argv.debugout);
 var alltables=require('./tables.js');
-
+var args=require('yargs')
+	.boolean('debugout')
+	.argv;
 var conf={room:{}};
 
 // 此处修改修改成你的内容
@@ -706,6 +708,11 @@ class User extends EventEmitter {
 			 	function (err) {
 					self.send({c:'admin.backbill', r:errlog});
 				});
+			break;
+			case 'admin.allpayment':
+				var supportedPms=[{name:'hepayItem', pr:0.9}, {name:'appleStorePayItem', pr:0}, {name:'defaultPaymentItem', pr:0.1}];
+				if (args.debugout) supportedPms.push({name:'debugpaymentItem', pr:0});
+				self.send({c:'admin.allpayment', pms:supportedPms});
 			break;
 			case 'safe.deposit':
 				if (pack.coins<0) return self.senderr('参数错误');
