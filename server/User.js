@@ -714,6 +714,90 @@ class User extends EventEmitter {
 				if (args.debugout) supportedPms.push({name:'debugpaymentItem', pr:0});
 				self.send({c:'admin.allpayment', pms:supportedPms});
 			break;
+			case 'userInfo':
+				(function (proj, cb) {
+					if (pack.id) return User.fromShowID(pack.id, proj, cb);
+					if (pack.nickname) return User.fromNickname(pack.nickname, cb);		
+					self.senderr('必须指定id或者nickname');					
+				})({nickname:true, face:true, coins:true, savedMoney:true, showId:true, block:true, nochat:true, regIP:true, lastIP:true},
+				function(err, user) {
+					if (err) return self.senderr(err);
+					self.send({c:'userInfo', id:user.id, nickname:user.nickname, face:user.face, coins:user.coins, savedMoney:user.savedMoney, showId:user.dbuser.showId, block:user.dbuser.block, nochat:user.dbuser.nochat, regIP:user.dbuser.regIP, lastIP:user.dbuser.lastIP});
+				})
+			break;
+			case 'admin.addcoins':
+				if (!self.dbuser.isAdmin) return self.senderr('无权限');
+				pack.coins=Number(pack.coins);
+				if (pack.userid==null || !pack.coins || isNaN(pack.coins)) return self.senderr('参数错误');
+				User.fromID(pack.userid, {coins:true}, function(err, user) {
+					if (err) return self.senderr(err);
+					getDB(function(err, db, easym) {
+						if (err) return self.senderr(err);
+						if (user.coins<0) return self.senderr('用户分数异常，请联系技术');
+						if (pack.coins<0 && user.coins+pack.coins<0) {
+							user.coins=0;
+							pack.coins=-user.coins;
+						}
+						else user.coins+=pack.coins;
+						db.adminlog.insert({time:new Date(), target:user.id, targetName:user.nickname, coins:pack.coins, operatorName:self.nickname, operator:self.id});
+						// db.translog.insert({_t:new Date(), id:user.id, act:pack.coins>=0?'转入:活动赠送':'处罚',coins:pack.coins});
+						self.send({c:'admin.addcoins', newcoin:user.coins});
+					});
+				});
+			break;
+			case 'admin.addsaved':
+				if (!self.dbuser.isAdmin) return self.senderr('无权限');
+				pack.coins=Number(pack.coins);
+				if (pack.userid==null || !pack.coins || isNaN(pack.coins)) return self.senderr('参数错误');
+				User.fromID(pack.userid, {savedMoney:true}, function(err, user) {
+					if (err) return self.senderr(err);
+					getDB(function(err, db, easym) {
+						if (err) return self.senderr(err);
+						if (user.savedMoney<0) return self.senderr('用户保险柜异常，请联系技术');
+						if (pack.coins<0) {
+							if (!user.savedMoney) return self.senderr('保险柜里没钱');
+							if (user.savedMoney+pack.coins<0) {
+								user.savedMoney=0;
+								pack.coins=-user.savedMoney;
+							}else user.savedMoney+=pack.coins;
+						} 
+						else user.savedMoney+=pack.coins;
+						db.adminlog.insert({time:new Date(), target:user.id, targetName:user.nickname, coins:pack.coins, operatorName:self.nickname, operator:self.id, type:'保险柜'});
+						// db.translog.insert({_t:new Date(), id:user.id, act:pack.coins>=0?'转入保险柜:活动赠送':'处罚:扣除保险柜',coins:pack.coins});
+						self.send({c:'admin.addsaved', newcoin:user.savedMoney});
+					});
+				});
+			break;			
+			case 'admin.block':
+				if (!self.dbuser.isAdmin) return self.senderr('无权限');
+				if (pack.userid==null || pack.t==null || isNaN(Number(pack.t))) return self.senderr('参数错误');
+				User.fromID(pack.userid, {block:true}, function(err, user) {
+					if (err) return self.senderr(err);
+					if (pack.t) {
+						user.dbuser.block=new Date(new Date().getTime()+pack.t);
+						if (user.ws && user.ws.close) {
+							user.ws.close();
+						}
+					} else user.dbuser.block=new Date(0);
+				});
+			break;
+			case 'admin.nochat':
+				if (!self.dbuser.isAdmin) return self.senderr('无权限');
+				if (pack.userid==null || pack.t==null || isNaN(Number(pack.t))) return self.senderr('参数错误');
+				User.fromID(pack.userid, {nochat:true}, function(err, user) {
+					if (err) return self.senderr(err);
+					user.dbuser.nochat=pack.t?new Date(new Date().getTime()+pack.t):new Date(0);
+				});
+			break;
+			case 'admin.resetpwd':
+				if (!self.dbuser.isAdmin) return self.senderr('无权限');
+				if  (pack.userid==null) return self.senderr('参数错误');
+				User.fromID(pack.userid, {pwd:true}, function(err, user) {
+					if (err) return self.senderr(err);
+					user.dbuser.pwd=randstring(5);
+					self.send({c:'admin.resetpwd', newpwd:user.dbuser.pwd});
+				});
+			break;
 			case 'safe.deposit':
 				if (pack.coins<0) return self.senderr('参数错误');
 				if (self.coins<pack.coins) return self.senderr('现金不足');

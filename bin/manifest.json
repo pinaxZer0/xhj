@@ -1,9 +1,9 @@
 {
-  "5.5.js?3a77e001d1253884ead9": "5.5.js?3a77e001d1253884ead9",
-  "6.6.js?c3425f89fe4846c7b760": "6.6.js?c3425f89fe4846c7b760",
-  "7.7.js?87a2f695491c44f34a01": "7.7.js?87a2f695491c44f34a01",
-  "8.8.js?e2a661fbad1bea4216a0": "8.8.js?e2a661fbad1bea4216a0",
-  "baccarat.fui": "baccarat.fui?27a299534108db3e821877165aa6b7aa",
+  "5.5.js?67d441aecb0a4d953207": "5.5.js?67d441aecb0a4d953207",
+  "6.6.js?4dc5a4469348f88f0e7c": "6.6.js?4dc5a4469348f88f0e7c",
+  "7.7.js?1ee1250e876d14ff548a": "7.7.js?1ee1250e876d14ff548a",
+  "8.8.js?c23017fdbe46da727054": "8.8.js?c23017fdbe46da727054",
+  "baccarat.fui": "baccarat.fui?a9d638ef25f495b011bc93885ce5e286",
   "baccarat@atlas0.png": "baccarat@atlas0.png?8ad6a89fd21defccd57ec60b105ca3d9",
   "baccarat@atlas0_1.png": "baccarat@atlas0_1.png?51f0f8f63976e8e5dd2507f39d864441",
   "baccarat@atlas1.png": "baccarat@atlas1.png?06e0d6eddbb09cabb80b490997600f65",
@@ -27,10 +27,10 @@
   "clock.mp3": "clock.mp3?c1aced506c948d03533e355365409d60",
   "company.jpg": "company.jpg?0e60234108358020b5a5e53acdd2a2e6",
   "deal.mp3": "deal.mp3?0e98b6ad29bce0d9db74758644240512",
-  "default.js": "1.default.js?f7f2e1624ed05da8a8b6",
-  "entry.js": "entry.js?b00b89420fcbd4907d4c",
-  "hepay.js": "2.hepay.js?f0782507a6c2143a4361",
-  "inapp.js": "3.inapp.js?a15b0c0add5419b7a161",
+  "default.js": "1.default.js?d5909e6bcc7c2f58e3b9",
+  "entry.js": "entry.js?9823ac91c2c889376783",
+  "hepay.js": "2.hepay.js?3e82885b25d03aed4339",
+  "inapp.js": "3.inapp.js?ebc622f214e05bdef2b2",
   "ingameBGMMono.mp3": "ingameBGMMono.mp3?e2f1dae4237ad6d5be9aacbcd2975699",
   "loader.js": "loader.js?07064efc17de2a12e842",
   "play0.mp3": "play0.mp3?d332e9c6f843daf1fddd8cbc8a224151",
@@ -48,5 +48,5 @@
   "playwin.mp3": "playwin.mp3?4854851a8b397ba9b21d87ef54e83394",
   "pleasebet.mp3": "pleasebet.mp3?414cc71ec543e8921a3bcc630db8b3b4",
   "tie.mp3": "tie.mp3?498dc41dcd1847af774710878480c743",
-  "wechat.js": "4.wechat.js?ffe4bdb47ab215d7341c"
+  "wechat.js": "4.wechat.js?524110715870adf9a335"
 }

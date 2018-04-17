@@ -47,6 +47,8 @@ function afterUserIn(err, pack, ws, dbuser) {
 	if (dbuser) {
 		if (dbuser.block>new Date()) return ws.sendp({c:'lgerr',msg:'账号被封停', view:'login'});
 		if (!dbuser.__created) {
+			debugout(dbuser._id, '@', ws.remoteAddress);
+			dbuser.lastIP=ws.remoteAddress;
 			if (dbuser.pwd && dbuser.pwd!=pack.pwd) return ws.sendp({err:'账号密码错', view:'login'});
 			ws.sendp({user:{showId:dbuser.showId, isAdmin:dbuser.isAdmin, bank:dbuser.bank, savedMoney:dbuser.savedMoney}});
 		}
@@ -61,6 +63,8 @@ function afterUserIn(err, pack, ws, dbuser) {
 				dbuser.city=pack.city;
 				dbuser.isGuest=pack.isGuest;
 				dbuser.coins=dbuser.coins;
+				dbuser.regIP=ws.remoteAddress;
+				dbuser.regTime=new Date();
 				ws.sendp({user:{showId:dbuser.showId, isAdmin:dbuser.isAdmin, bank:dbuser.bank, savedMoney:dbuser.savedMoney}});
 				delete dbuser.__created;
 			});
@@ -135,9 +139,10 @@ module.exports=function msgHandler(db, createDbJson, wss) {
 		db.servers.updateMany({}, {$unset:{xiazhu:1}});
 	});
 
-	wss.on('connection', function connection(ws) {
+	wss.on('connection', function connection(ws, req) {
 		ws.sendp=ws.sendjson=send;
 		ws.__ob=true;
+		ws.remoteAddress=req.headers['x-forwarded-for']||req.headers['X-Real-IP']||req.headers['x-real-ip']||req.connection.remoteAddress;
 		debugout('someone in');
 
 		ws.on('message', function(data) {
