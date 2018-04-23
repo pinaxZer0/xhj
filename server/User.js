@@ -25,6 +25,33 @@ function getDbuser(userid, proj, cb) {
 	})
 }
 
+var supportedPms=[{name:'hepayItem', pr:1}, {name:'appleStorePayItem', pr:0}, {name:'defaultPaymentItem', pr:0}];
+supportedPms.push({name:'iosApplyPaymentItem', pr:false});
+if (args.debugout) supportedPms.push({name:'debugpaymentItem', pr:false});
+function updatePms(r) {
+	for (var i=0; i<supportedPms.length; i++) {
+		if (r[supportedPms[i].name]!=null) supportedPms[i].pr=r[supportedPms[i].name];
+		else {
+			if (supportedPms[i].name=='debugpaymentItem' || supportedPms[i].name=='iosApplyPaymentItem') {
+				supportedPms[i].pr=false;
+			}
+		}
+	}
+}
+function isAppleStoreSupported() {
+	for (var i=0; i<supportedPms.length; i++) {
+		if (supportedPms[i].name=='iosApplePaymentItem' && supportedPms[i].pr) return true;
+		if (supportedPms[i].name=='appleStorePayItem' && supportedPms[i].pr>0) return true;
+	}
+	return false;
+}
+getDB(function(err, db) {
+	db.payment.find({_id:'0'}).toArray(function(err, r) {
+		if (err ||r.length==0) return;
+		updatePms(r[0]);
+	})
+})
+
 // 此处修改修改成你的内容
 var pack_define={
 	'imme':{want:{tickets:3}, rmb:0},
@@ -710,9 +737,35 @@ class User extends EventEmitter {
 				});
 			break;
 			case 'admin.allpayment':
-				var supportedPms=[{name:'hepayItem', pr:0.9}, {name:'appleStorePayItem', pr:0}, {name:'defaultPaymentItem', pr:0.1}];
-				if (args.debugout) supportedPms.push({name:'debugpaymentItem', pr:0});
+				if (!self.dbuser.isAdmin) return self.senderr('无权限');
 				self.send({c:'admin.allpayment', pms:supportedPms});
+			break;
+			case 'admin.setpayment':
+				if (!self.dbuser.isAdmin) return self.senderr('无权限');
+				updatePms(pack.weights);
+				getDB(function(err, db, easym) {
+					db.payment.update({_id:'0'}, pack.weights, {upsert:true});
+				});
+			break;
+			case 'rc.querymethod':
+				var range=[], pos=0;
+				debugout(supportedPms);
+				for (var i=0; i<supportedPms.length; i++) {
+					if (typeof supportedPms[i].pr=='number') {
+						pos+=supportedPms[i].pr;
+						range.push({p:pos, name:supportedPms[i].name});
+					} else {
+						if (supportedPms[i].name=='debugpaymentItem' && supportedPms[i].pr) return self.send({c:'rc.querymethod', method:'debugpaymentItem'})
+						if (supportedPms[i].name=='iosApplyPaymentItem' && supportedPms[i].pr && pack.inapp && (function isiOS(device) {
+							return (device=='iPhone' || device=='iPod' ||device=='iPad')
+						})(pack.device)) return self.send({c:'rc.querymethod', method:'appleStorePayItem'})
+					}
+				}
+				var rnd=Math.random();
+				for (var i=0; i<range.length; i++) {
+					if (rnd<=range[i].p) return self.send({c:'rc.querymethod', method:range[i].name});
+				}
+				self.senderr('没有找到支付通道');
 			break;
 			case 'userInfo':
 				(function (proj, cb) {
@@ -846,6 +899,19 @@ class User extends EventEmitter {
 						self.send({c:'personhis', data:r});
 					});
 				})
+			break;
+			case 'applestore.cd':
+				if (!isAppleStoreSupported()) return self.send({c:'applestore.cd', sec:9999999});
+				var now=new Date();
+				if (!self.dbuser.lastTimeOfFreeCoins) self.dbuser.lastTimeOfFreeCoins =now;
+				var leftsec=5-Math.floor((now-self.dbuser.lastTimeOfFreeCoins)/1000);
+				if (leftsec<0) leftsec=0;
+				self.send({c:'applestore.cd', sec:leftsec});
+			break;
+			case 'applestore.freecoin':
+				if (!isAppleStoreSupported()) return self.senderr('不支持免费金币');
+				self.dbuser.lastTimeOfFreeCoins =new Date();
+				self.coins+=10000;
 			break;
 			default:
 				var isprocessed=this.emit(pack.c, pack, this);
