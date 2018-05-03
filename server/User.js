@@ -40,7 +40,7 @@ function updatePms(r) {
 }
 function isAppleStoreSupported() {
 	for (var i=0; i<supportedPms.length; i++) {
-		if (supportedPms[i].name=='iosApplePaymentItem' && supportedPms[i].pr) return true;
+		if (supportedPms[i].name=='iosApplyPaymentItem' && supportedPms[i].pr) return true;
 		if (supportedPms[i].name=='appleStorePayItem' && supportedPms[i].pr>0) return true;
 	}
 	return false;
