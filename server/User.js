@@ -904,7 +904,7 @@ class User extends EventEmitter {
 				if (!isAppleStoreSupported()) return self.send({c:'applestore.cd', sec:9999999});
 				var now=new Date();
 				if (!self.dbuser.lastTimeOfFreeCoins) self.dbuser.lastTimeOfFreeCoins =now;
-				var leftsec=20*60*1000-Math.floor((now-self.dbuser.lastTimeOfFreeCoins)/1000);
+				var leftsec=20*60-Math.floor((now-self.dbuser.lastTimeOfFreeCoins)/1000);
 				if (leftsec<0) leftsec=0;
 				self.send({c:'applestore.cd', sec:leftsec});
 			break;
