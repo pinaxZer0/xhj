@@ -44,6 +44,7 @@ function chkpwd(userid, pwd, cb) {
 
 function afterUserIn(err, pack, ws, dbuser) {
 	if (err) return ws.sendp({err:err, view:'login'});
+	var isNew=false;
 	if (dbuser) {
 		if (dbuser.block>new Date()) return ws.sendp({c:'lgerr',msg:'账号被封停', view:'login'});
 		if (!dbuser.__created) {
@@ -68,6 +69,7 @@ function afterUserIn(err, pack, ws, dbuser) {
 				ws.sendp({user:{showId:dbuser.showId, isAdmin:dbuser.isAdmin, bank:dbuser.bank, savedMoney:dbuser.savedMoney}});
 				delete dbuser.__created;
 			});
+			isNew=true;
 		}
 	}
 	if (ws.readyState !== ws.OPEN) return;
@@ -96,6 +98,25 @@ function afterUserIn(err, pack, ws, dbuser) {
 			ws.user.storeMail('下载客户端奖励', {tickets:2});
 		}
 	});
+	if (isNew) {
+		var al=g_db.p.awardlog;
+		al.count().then((_count)=>{
+			if (_count<=1) _count=1;
+			al.find().skip(_count-1).toArray((err, r) => {
+				if (err) return console.log(err);
+				var now=new Date();
+				if (r.length==0 || !(r[0].time instanceof Date) || now.getDate()!=r[0].time.getDate()) {
+					al.insert({time:now, newUserAwardPool:300-18, newUser:1});
+				} else {
+					if (r[0].newUserAwardPool<18) return;
+					al.update({_id:r[0]._id}, {$inc:{newUserAwardPool:-18, newUser:1}});
+				}
+				ws.user.coins+=18;
+				ws.user.send({c:'tip', msg:'恭喜你获得新用户惊喜礼包18元！', seq:1});
+			});
+		})
+	}
+
 	var tbl;
 	if (pack.room) {
 		tbl=alltables.find(pack.room);

@@ -15,6 +15,7 @@ module.exports=function (cb) {
 		{servers:{index:['order']}},
 		{games:{index:['user', 't'], capped:true, size:100*1024*1024, max:1000000}},
 		{adminlog:{index:['time', 'operatorName'], capped:true, size:100*1024*1024, max:1000000}},
+		{awardlog:{index:['time'], capped:true, size:100*1024, max:3000}},
 		'payment'
 		]}, function(err, db) {
 		if (err) return cb(err);
